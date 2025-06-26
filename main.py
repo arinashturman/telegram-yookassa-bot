@@ -7,19 +7,15 @@ from yookassa import Configuration, Payment
 import uuid
 import os
 
-# Настройки ЮKassa
 Configuration.account_id = os.getenv("YOOKASSA_ACCOUNT_ID", "твой_id")
 Configuration.secret_key = os.getenv("YOOKASSA_SECRET_KEY", "твой_secret_key")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "твой_telegram_token")
 
-# FastAPI
 app = FastAPI()
 
-# Telegram Application
 telegram_app = Application.builder().token(BOT_TOKEN).build()
 
-# Создание платежной ссылки
 def create_payment_link(amount_rub: int, description: str, return_url: str, telegram_user_id: int) -> str:
     payment = Payment.create({
         "amount": {
@@ -38,7 +34,6 @@ def create_payment_link(amount_rub: int, description: str, return_url: str, tele
     }, idempotence_key=str(uuid.uuid4()))
     return payment.confirmation.confirmation_url
 
-# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         "Привет! Здесь я собрала свои авторские видеоуроки 💆‍♀️\n\n"
@@ -48,7 +43,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(text, reply_markup=reply_markup)
 
-# Обработка кнопок
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -82,20 +76,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await query.message.reply_text(f"🔗 Ссылка для оплаты:\n{url}", disable_web_page_preview=True)
 
-# Регистрируем хендлеры
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CallbackQueryHandler(button_handler))
 
-# Запуск и остановка Telegram-бота вместе с FastAPI
 @app.on_event("startup")
 async def startup_event():
+    await telegram_app.initialize()
     await telegram_app.start()
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    await telegram_app.shutdown()
     await telegram_app.stop()
 
-# ЮKassa Webhook
 @app.post("/yookassa/webhook")
 async def handle_webhook(request: Request):
     payload = await request.json()
