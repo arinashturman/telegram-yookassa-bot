@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: telegram-bot-server
+    runtime: python
+    buildCommand: ""
+    startCommand: uvicorn main:fastapi_app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: BOT_TOKEN
+        value: "твоя_переменная"
+      - key: YOOKASSA_ACCOUNT_ID
+        value: "твоя_переменная"
+      - key: YOOKASSA_SECRET_KEY
+        value: "твоя_переменная"
