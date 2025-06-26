@@ -88,12 +88,12 @@ telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CallbackQueryHandler(button_handler))
 
 # Запускаем Telegram-бот как фон задачу
-@fastapi_app.on_event("startup")
+@app.on_event("startup")
 async def startup_event():
     asyncio.create_task(telegram_app.run_polling())
 
 # ЮKassa Webhook
-@fastapi_app.post("/yookassa/webhook")
+@app.post("/yookassa/webhook")
 async def handle_webhook(request: Request):
     payload = await request.json()
     print("Webhook от ЮKassa:", payload)
