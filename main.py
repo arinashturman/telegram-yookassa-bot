@@ -7,10 +7,10 @@ from yookassa import Configuration, Payment
 import uuid
 import os
 
-Configuration.account_id = os.getenv("YOOKASSA_ACCOUNT_ID", "твой_id")
-Configuration.secret_key = os.getenv("YOOKASSA_SECRET_KEY", "твой_secret_key")
+Configuration.account_id = os.getenv("1111202")
+Configuration.secret_key = os.getenv("live_ZH5lu2pWuE-NviXGnfdE3N4acMupaT8GcB8rbUHTPdY")
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "твой_telegram_token")
+BOT_TOKEN = os.getenv("7945507873:AAFzT8i4DNdkNrvgQMd6mYQ8KhpL71Ngp1U")
 
 app = FastAPI()
 
