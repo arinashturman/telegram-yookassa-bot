@@ -1,16 +1,14 @@
 from fastapi import FastAPI, Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler, ContextTypes
-)
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from yookassa import Configuration, Payment
 import uuid
 import os
 
-Configuration.account_id = os.getenv("1111202")
-Configuration.secret_key = os.getenv("live_ZH5lu2pWuE-NviXGnfdE3N4acMupaT8GcB8rbUHTPdY")
+Configuration.account_id = os.getenv("YOOKASSA_ACCOUNT_ID")
+Configuration.secret_key = os.getenv("YOOKASSA_SECRET_KEY")
 
-BOT_TOKEN = os.getenv("7945507873:AAFzT8i4DNdkNrvgQMd6mYQ8KhpL71Ngp1U")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 app = FastAPI()
 
@@ -18,19 +16,11 @@ telegram_app = Application.builder().token(BOT_TOKEN).build()
 
 def create_payment_link(amount_rub: int, description: str, return_url: str, telegram_user_id: int) -> str:
     payment = Payment.create({
-        "amount": {
-            "value": f"{amount_rub}.00",
-            "currency": "RUB"
-        },
-        "confirmation": {
-            "type": "redirect",
-            "return_url": return_url
-        },
+        "amount": {"value": f"{amount_rub}.00", "currency": "RUB"},
+        "confirmation": {"type": "redirect", "return_url": return_url},
         "capture": True,
         "description": description,
-        "metadata": {
-            "telegram_user_id": telegram_user_id
-        }
+        "metadata": {"telegram_user_id": telegram_user_id}
     }, idempotence_key=str(uuid.uuid4()))
     return payment.confirmation.confirmation_url
 
