@@ -8,7 +8,7 @@ import os
 Configuration.account_id = os.getenv("YOOKASSA_ACCOUNT_ID")
 Configuration.secret_key = os.getenv("YOOKASSA_SECRET_KEY")
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("ПЕРЕМЕННАЯ_С_ТОКЕНОМ")
 
 app = FastAPI()
 
