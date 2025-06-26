@@ -5,7 +5,6 @@ from telegram.ext import (
 )
 from yookassa import Configuration, Payment
 import uuid
-import asyncio
 import os
 
 # Настройки ЮKassa
@@ -87,10 +86,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CallbackQueryHandler(button_handler))
 
-# Запускаем Telegram-бот как фон задачу
+# Запуск и остановка Telegram-бота вместе с FastAPI
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(telegram_app.run_polling())
+    await telegram_app.start()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await telegram_app.stop()
 
 # ЮKassa Webhook
 @app.post("/yookassa/webhook")
