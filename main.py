@@ -15,7 +15,7 @@ Configuration.secret_key = os.getenv("YOOKASSA_SECRET_KEY", "твой_secret_key
 BOT_TOKEN = os.getenv("BOT_TOKEN", "твой_telegram_token")
 
 # FastAPI
-fastapi_app = FastAPI()
+app = FastAPI()
 
 # Telegram Application
 telegram_app = Application.builder().token(BOT_TOKEN).build()
