@@ -6,24 +6,19 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from yookassa import Configuration, Payment
 
-# ───── Логирование ───── #
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ───── Загрузка переменных среды ───── #
 def load_env():
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     YOOKASSA_ACCOUNT_ID = os.getenv("YOOKASSA_ACCOUNT_ID")
     YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
-
     if not all([BOT_TOKEN, YOOKASSA_ACCOUNT_ID, YOOKASSA_SECRET_KEY]):
-        raise RuntimeError("❌ Отсутствуют переменные среды: BOT_TOKEN, YOOKASSA_ACCOUNT_ID или YOOKASSA_SECRET_KEY")
-
+        raise RuntimeError("❌ Отсутствуют переменные среды")
     Configuration.account_id = YOOKASSA_ACCOUNT_ID
     Configuration.secret_key = YOOKASSA_SECRET_KEY
     return BOT_TOKEN
 
-# ───── Инициализация ───── #
 BOT_TOKEN = load_env()
 telegram_app = Application.builder().token(BOT_TOKEN).build()
 app = FastAPI()
@@ -33,7 +28,6 @@ async def startup_event():
     await telegram_app.initialize()
     logger.info("✅ Telegram bot initialized.")
 
-# ───── Webhook Telegram ───── #
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -44,7 +38,6 @@ async def telegram_webhook(request: Request):
         logger.error("Ошибка в webhook: %s", e)
     return {"ok": True}
 
-# ───── Команда /start ───── #
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("Смотреть уроки", callback_data="show_lessons")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -54,7 +47,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# ───── Обработка кнопок ───── #
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -78,7 +70,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "✔️ Сколько носить тейпы, чтобы был эффект\n"
                 "✔️ Как аккуратно снять аппликацию, не повредив кожу\n\n"
                 "*🎥 Только практика и ничего лишнего. Подойдёт даже тем, кто никогда не делал тейпирование.*\n\n"
-                "*Стоимость:* 1000 рублей."
+                "*Стоимость:* 100 рублей."
             )
             keyboard = [
                 [InlineKeyboardButton("Оплатить ✅", callback_data="pay")],
@@ -105,7 +97,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error("❌ Ошибка при обработке кнопки: %s", e)
         await query.message.reply_text("Произошла ошибка. Попробуйте позже.")
 
-# ───── Создание платёжной ссылки ───── #
 def create_payment_link(amount_rub, description, return_url, telegram_user_id):
     payment = Payment.create({
         "amount": {
@@ -124,43 +115,31 @@ def create_payment_link(amount_rub, description, return_url, telegram_user_id):
     }, idempotency_key=str(uuid.uuid4()))
     return payment.confirmation.confirmation_url
 
-# ───── Отправка урока после оплаты ───── #
 async def send_lesson(user_id):
     try:
         message_text = (
             "Оплата прошла успешно! Спасибо 💛\n\n"
-            "Желаю тебе приятной и полезной практики!"
+            "Желаю тебе приятной и полезной практики!\n\n"
+            "🔗 Вот ссылка на урок:\nhttps://t.me/+H7LcJ0DMKZ1jMTNi"
         )
-
         await telegram_app.bot.send_message(chat_id=user_id, text=message_text)
-
-        video_path = "urok_1_teipy_oteki.mp4"
-        with open(video_path, "rb") as video:
-            await telegram_app.bot.send_video(chat_id=user_id, video=video, caption="Урок: Тейпы против отёков 🎥")
-
         logger.info(f"✅ Урок отправлен пользователю {user_id}")
-
     except Exception as e:
         logger.error("❌ Ошибка при отправке урока: %s", e)
 
-# ───── Вебхук Юкассы ───── #
 @app.post("/yookassa-webhook")
 async def yookassa_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         data = await request.json()
         event = data.get("event")
         object_data = data.get("object", {})
-
         if event == "payment.succeeded":
             telegram_user_id = object_data.get("metadata", {}).get("telegram_user_id")
             if telegram_user_id:
                 background_tasks.add_task(send_lesson, telegram_user_id)
-
     except Exception as e:
         logger.error("❌ Ошибка при обработке вебхука от Юкассы: %s", e)
-
     return {"ok": True}
 
-# ───── Регистрация хендлеров ───── #
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CallbackQueryHandler(button_handler))
