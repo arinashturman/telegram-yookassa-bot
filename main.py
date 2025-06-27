@@ -90,7 +90,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             url = create_payment_link(
                 amount_rub=1000,
                 description="Урок: Тейпы против отёков",
-                return_url="https://t.me/natural_face_bot"
+                return_url="https://t.me/natural_face_bot",
                 telegram_user_id=query.from_user.id
             )
             await query.message.reply_text(f"🔗 Ссылка для оплаты:\n{url}", disable_web_page_preview=True)
