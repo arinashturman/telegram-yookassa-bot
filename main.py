@@ -1,7 +1,7 @@
 import os
 import uuid
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, BackgroundTasks
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from yookassa import Configuration, Payment
@@ -33,7 +33,7 @@ async def startup_event():
     await telegram_app.initialize()
     logger.info("✅ Telegram bot initialized.")
 
-# ───── Webhook ───── #
+# ───── Webhook Telegram ───── #
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -71,7 +71,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif query.data == "lesson_1":
             caption = (
                 "*Что тебя ждёт в уроке?*\n\n"
-                "✔️ Подготовка кожи\n✔️ Аппликация\n✔️ Нанесение\n✔️ Эффект\n\n"
+                "✔️ Подготовка кожи к тейпированию\n"
+                "✔️ Меры осторожности и как сделать тест на аллергию\n"
+                "✔️ Как вырезать аппликацию от отёков\n"
+                "✔️ Правильная техника нанесения тейпов\n"
+                "✔️ Сколько носить тейпы, чтобы был эффект\n"
+                "✔️ Как аккуратно снять аппликацию, не повредив кожу\n\n"
+                "*🎥 Только практика и ничего лишнего. Подойдёт даже тем, кто никогда не делал тейпирование.*\n\n"
                 "*Стоимость:* 1000 рублей."
             )
             keyboard = [
@@ -117,6 +123,43 @@ def create_payment_link(amount_rub, description, return_url, telegram_user_id):
         }
     }, idempotency_key=str(uuid.uuid4()))
     return payment.confirmation.confirmation_url
+
+# ───── Отправка урока после оплаты ───── #
+async def send_lesson(user_id):
+    try:
+        message_text = (
+            "Оплата прошла успешно! Спасибо 💛\n\n"
+            "Желаю тебе приятной и полезной практики!"
+        )
+
+        await telegram_app.bot.send_message(chat_id=user_id, text=message_text)
+
+        video_path = "urok_1_teipy_oteki.mp4"
+        with open(video_path, "rb") as video:
+            await telegram_app.bot.send_video(chat_id=user_id, video=video, caption="Урок: Тейпы против отёков 🎥")
+
+        logger.info(f"✅ Урок отправлен пользователю {user_id}")
+
+    except Exception as e:
+        logger.error("❌ Ошибка при отправке урока: %s", e)
+
+# ───── Вебхук Юкассы ───── #
+@app.post("/yookassa-webhook")
+async def yookassa_webhook(request: Request, background_tasks: BackgroundTasks):
+    try:
+        data = await request.json()
+        event = data.get("event")
+        object_data = data.get("object", {})
+
+        if event == "payment.succeeded":
+            telegram_user_id = object_data.get("metadata", {}).get("telegram_user_id")
+            if telegram_user_id:
+                background_tasks.add_task(send_lesson, telegram_user_id)
+
+    except Exception as e:
+        logger.error("❌ Ошибка при обработке вебхука от Юкассы: %s", e)
+
+    return {"ok": True}
 
 # ───── Регистрация хендлеров ───── #
 telegram_app.add_handler(CommandHandler("start", start))
