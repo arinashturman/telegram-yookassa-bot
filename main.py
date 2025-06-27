@@ -81,3 +81,24 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
     print("❌ Ошибка при создании ссылки оплаты:", e)
     await query.message.reply_text("Произошла ошибка при создании ссылки оплаты. Попробуйте позже.")
+
+def create_payment_link(amount_rub, description, return_url, telegram_user_id):
+    payment = Payment.create({
+        "amount": {
+            "value": f"{amount_rub}.00",
+            "currency": "RUB"
+        },
+        "confirmation": {
+            "type": "redirect",
+            "return_url": return_url
+        },
+        "capture": True,
+        "description": description,
+        "metadata": {
+            "telegram_user_id": telegram_user_id
+        }
+    }, idempotency_key=str(uuid.uuid4()))
+    return payment.confirmation.confirmation_url
+
+telegram_app.add_handler(CommandHandler("start", start))
+telegram_app.add_handler(CallbackQueryHandler(button_handler))
