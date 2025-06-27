@@ -79,5 +79,5 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await query.message.reply_text(f"🔗 Ссылка для оплаты:\n{url}", disable_web_page_preview=True)
         except Exception as e:
-            print("❌ Ошибка при создании ссылки оплаты:", e)
-            await query.message.reply_text("Произошла ошибка_
+    print("❌ Ошибка при создании ссылки оплаты:", e)
+    await query.message.reply_text("Произошла ошибка при создании ссылки оплаты. Попробуйте позже.")
