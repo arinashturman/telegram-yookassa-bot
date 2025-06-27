@@ -94,7 +94,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         elif query.data == "pay":
             url = create_payment_link(
-                amount_rub=1000,
+                amount_rub=100,
                 description="Урок: Тейпы против отёков",
                 return_url="https://t.me/natural_face_bot",
                 telegram_user_id=query.from_user.id
