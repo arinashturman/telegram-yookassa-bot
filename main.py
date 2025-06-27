@@ -12,6 +12,9 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 YOOKASSA_ACCOUNT_ID = os.getenv("YOOKASSA_ACCOUNT_ID")
 YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
 
+if not all([BOT_TOKEN, YOOKASSA_ACCOUNT_ID, YOOKASSA_SECRET_KEY]):
+    raise RuntimeError("❌ Отсутствуют переменные среды: BOT_TOKEN, YOOKASSA_ACCOUNT_ID или YOOKASSA_SECRET_KEY")
+
 # Настраиваем ЮKassa
 Configuration.account_id = YOOKASSA_ACCOUNT_ID
 Configuration.secret_key = YOOKASSA_SECRET_KEY
@@ -19,7 +22,6 @@ Configuration.secret_key = YOOKASSA_SECRET_KEY
 # Создаём Telegram приложение
 telegram_app = Application.builder().token(BOT_TOKEN).build()
 
-# Создаём FastAPI endpoint для Telegram Webhook
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     data = await request.json()
@@ -68,48 +70,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif query.data == "pay":
-        payment_url = create_payment_link(
-            amount_rub=1000,
-            description="Урок: Тейпы против отёков",
-            return_url="https://t.me/ИМЯ_ТВОЕГО_БОТА",
-            telegram_user_id=query.from_user.id
-        )
-        await query.message.reply_text(
-            f"🔗 Ссылка для оплаты:\n{payment_url}",
-            disable_web_page_preview=True
-        )
-
-def create_payment_link(amount_rub: int, description: str, return_url: str, telegram_user_id: int) -> str:
-    payment = Payment.create({
-        "amount": {
-            "value": f"{amount_rub}.00",
-            "currency": "RUB"
-        },
-        "confirmation": {
-            "type": "redirect",
-            "return_url": return_url
-        },
-        "capture": True,
-        "description": description,
-        "metadata": {
-            "telegram_user_id": telegram_user_id
-        }
-    }, idempotence_key=str(uuid.uuid4()))
-    return payment.confirmation.confirmation_url
-
-# Добавляем обработчики
-telegram_app.add_handler(CommandHandler("start", start))
-telegram_app.add_handler(CallbackQueryHandler(button_handler))
-
-# При старте приложения регистрируем Webhook
-@app.on_event("startup")
-async def on_startup():
-    await telegram_app.initialize()
-    webhook_url = "https://telegram-yookassa-bot.onrender.com/webhook"
-    await telegram_app.bot.set_webhook(webhook_url)
-    await telegram_app.start()
-    print("Webhook установлен:", webhook_url)
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    await telegram_app.stop()
+        try:
+            url = create_payment_link(
+                amount_rub=1000,
+                description="Урок: Тейпы против отёков",
+                return_url="https://t.me/ТВОЙ_ЮЗЕРНЕЙМ_БОТА",  # обязательно замени
+                telegram_user_id=query.from_user.id
+            )
+            await query.message.reply_text(f"🔗 Ссылка для оплаты:\n{url}", disable_web_page_preview=True)
+        except Exception as e:
+            print("❌ Ошибка при создании ссылки оплаты:", e)
+            await query.message.reply_text("Произошла ошибка_
